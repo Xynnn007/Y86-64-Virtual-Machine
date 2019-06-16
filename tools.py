@@ -3,7 +3,7 @@
 import re
 class tools():
 	def __init__(self):
-		self.registerMap =  {'%rax':'0',
+		self.register2CodeMap =  {'%rax':'0',
 		'%rcx':'1',
 		'%rdx':'2',
 		'%rbx':'3',
@@ -19,12 +19,16 @@ class tools():
 		'%r13':'d',
 		'%r14':'e'}
 
-		self.operationMap = {'addq':'0',
+		self.code2RegisterMap =  dict([val,key] for key,val in self.register2CodeMap.items())
+
+		self.operation2CodeMap = {'addq':'0',
 		'subq':'1',
 		'andq':'2',
 		'xorq':'3'}
 
-		self.jmpMap = {'jmp' : '0',
+		self.code2OperationMap =  dict([val,key] for key,val in self.operation2CodeMap.items())
+
+		self.jmp2CodeMap = {'jmp' : '0',
 		'jle' :'1',
 		'jl' : '2',
 		'je' :'3',
@@ -32,13 +36,17 @@ class tools():
 		'jge':'5',
 		'jg':'6'}
 
-		self.cmovMap = {'rrmovq':'0',
+		self.code2JmpMap =  dict([val,key] for key,val in self.jmp2CodeMap.items())
+
+		self.cmov2CodeMap = {'rrmovq':'0',
 		'cmovle':'1',
 		'cmovl':'2',
 		'cmove':'3',
 		'cmovne':'4',
 		'cmovge':'5',
 		'cmovg':'6'}
+
+		self.code2CmovMap =  dict([val,key] for key,val in self.cmov2CodeMap.items())
 
 	def typeof(variate):
 		type=None
@@ -67,10 +75,6 @@ class tools():
 				res1.append(i)
 		return res1
 
-    #寄存器名称转化为不带0x十六进制数字编号
-	def hexByRegister(self, register):
-		return self.registerMap[register]
-
     #偏移量或立即数转化为小端8字节表示
 	def opInt2LittleEndine(self, inputInt):
 		inputInt = eval(inputInt.replace('$',''))
@@ -90,15 +94,52 @@ class tools():
 		+ hexResult[:2]
 		return outResult
 
+	#小端8字节转化为十进制数
+	def opLittleEndine2Int(self, LittleEndineCode):
+		#重新调序
+		hexOrigin = '0x' + LittleEndineCode[14:] \
+		+ LittleEndineCode[12:14] \
+		+ LittleEndineCode[10:12] \
+		+ LittleEndineCode[8:10] \
+		+ LittleEndineCode[6:8] \
+		+ LittleEndineCode[4:6] \
+		+ LittleEndineCode[2:4] \
+		+ LittleEndineCode[:2]
+		OutputInt = eval(hexOrigin)
+		#判断负数
+		if (eval(hexOrigin[:3])&0b1000 != 0):
+			OutputInt -= 0x10000000000000000
+		OutputString = '$' + str(OutputInt)
+		return OutputString
+
+    #寄存器名称转化为不带0x十六进制数字编号
+	def hexByRegister(self, register):
+		return self.register2CodeMap[register]
+
+	#字节码转化为存储器名称
+	def registerByHex(self, hex):
+		return self.code2RegisterMap[hex]
+
     #整数操作指令转换为不带0x十六进制数字编号
 	def hexByOP(self, operation):
-		return self.operationMap[operation]
+		return self.operation2CodeMap[operation]
+
+ 	#字节码转化为整数操作指令
+	def opByHex(self, hex):
+		return self.code2OperationMap[hex]
 
     #分支指令转换为不带0x的十六进制数字编号
 	def hexByJmp(self, jmp):
-		return self.jmpMap[jmp]
+		return self.jmp2CodeMap[jmp]
 
+	#字节码转化为分支指令
+	def jmpByHex(self, hex):
+		return self.code2JmpMap[hex]
 
 	#条件传送指令转换为不带0x的十六进制数字编号
 	def hexByCmov(self, cmov):
-		return self.cmovMap[cmov]
+		return self.cmov2CodeMap[cmov]
+
+	#字节码转换为条件传送指令
+	def cmovByHex(self, hex):
+		return self.code2CmovMap[hex]

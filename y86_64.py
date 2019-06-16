@@ -1,5 +1,5 @@
 #内存字长为8字节
-#内存里某个地址的数据统一表示为字符串形式为0x00，表示一个字节
+#内存里某个地址的数据统一表示为字符串形式为00，表示一个字节
 import tools,sys
 
 
@@ -19,25 +19,25 @@ class y86_64_vitualMachine():
 
 		#设置内存
 	def __setMemory(self):
-		self.memory = ['0x00' for i in range(sizeOfMemory)]
+		self.memory = ['00' for i in range(sizeOfMemory)]
 
 		#设置寄存器
 	def __setRegister():
-		self.register = {'rax':'0x00',
-		'rcx':'0x00',
-		'rdx':'0x00',
-		'rbx':'0x00',
-		'rsp':'0x00',
-		'rbp':'0x00',
-		'rsi':'0x00',
-		'rdi':'0x00',
-		'r8':'0x00',
-		'r9':'0x00',
-		'r10':'0x00',
-		'r11':'0x00',
-		'r12':'0x00',
-		'r13':'0x00',
-		'r14':'0x00'}
+		self.register = {'rax':'00',
+		'rcx':'00',
+		'rdx':'00',
+		'rbx':'00',
+		'rsp':'00',
+		'rbp':'00',
+		'rsi':'00',
+		'rdi':'00',
+		'r8':'00',
+		'r9':'00',
+		'r10':'00',
+		'r11':'00',
+		'r12':'00',
+		'r13':'00',
+		'r14':'00'}
 
 	def __setCC(self):
 		self.CC = {'ZF':0,
@@ -85,7 +85,7 @@ class y86_64_compiler():
 	#编译函数
 	def compile(self, infile, outfile):
 		with open(infile , 'r') as inputFile:
-			with open(outfile ,'a') as outputFile:
+			with open(outfile ,'w') as outputFile:
 				sentence = inputFile.readline()
 				while(sentence):
 					outputFile.write(self.__compileSentence(sentence))
@@ -236,7 +236,101 @@ class y86_64_compiler():
 
 			return binCode
 
+class y86_64_disassembler():
+	def __init__(self):
+		self.tools = tools.tools()
+	def helper(self):
+		print(
+			'''
+		y86-64反汇编器，请使用命令格式如下：
+			参数1：源机器代码文件
+			参数2：输出汇编文件
+			'''
+			)
+	def disassemble(self, infile, outfile):
+		with open(infile , 'r') as inputFile:
+			with open(outfile ,'w') as outputFile:
+				char = inputFile.read(1)
+				while(char):
+					if (char == '0'):
+						char = inputFile.read(1)
+						if char == '0':
+							outputFile.write('halt\n')
 
+					elif (char == '1'):
+						char = inputFile.read(1)
+						if char == '0':
+							outputFile.write('nop\n')
+
+					elif (char == '2'):
+						char = inputFile.read(1)
+						if char == '0':
+							rA = self.tools.registerByHex(inputFile.read(1))
+							rB = self.tools.registerByHex(inputFile.read(1))
+							outputFile.write('rrmovq %s, %s\n' % (rA,rB))
+
+					elif (char == '3'):
+						char = inputFile.read(2)
+						if char == '0f':
+							rB = self.tools.registerByHex(inputFile.read(1))
+							V = self.tools.opLittleEndine2Int(inputFile.read(16))
+							outputFile.write('irmovq %s, %s\n' % (V,rB))
+
+					elif (char == '4'):
+						char = inputFile.read(1)
+						if char == '0':
+							rA = self.tools.registerByHex(inputFile.read(1))
+							rB = self.tools.registerByHex(inputFile.read(1))
+							D = self.tools.opLittleEndine2Int(inputFile.read(16))
+							outputFile.write('rmmovq %s, %s(%s)\n' % (rA,D,rB))
+
+					elif (char == '5'):
+						char = inputFile.read(1)
+						if char == '0':
+							rA = self.tools.registerByHex(inputFile.read(1))
+							rB = self.tools.registerByHex(inputFile.read(1))
+							D = self.tools.opLittleEndine2Int(inputFile.read(16))
+							outputFile.write('mrmovq %s(%s), %s\n' % (D,rB,rA))
+
+					elif (char == '6'):
+						op = self.tools.opByHex(inputFile.read(1))
+						rA = self.tools.registerByHex(inputFile.read(1))
+						rB = self.tools.registerByHex(inputFile.read(1))
+						outputFile.write('%s %s, %s\n' % (op,rA,rB))
+
+					elif (char == '7'):
+						jXX = self.tools.jmpByHex(inputFile.read(1))
+						Dest = self.tools.opLittleEndine2Int(inputFile.read(16))
+						outputFile.write('%s %s\n' % (jXX,Dest))
+
+					elif (char == '8'):
+						char = inputFile.read(1)
+						if char == '0':
+							Dest = self.tools.opLittleEndine2Int(inputFile.read(16))
+							outputFile.write('call %s\n' % (Dest))
+
+					elif (char == '9'):
+						char = inputFile.read(1)
+						if char == '0':
+							outputFile.write('ret\n')
+
+					elif (char == 'a'):
+						char = inputFile.read(1)
+						if char == '0':
+							rA = self.tools.registerByHex(inputFile.read(1))
+							char = inputFile.read(1)
+							if char == 'f':
+								outputFile.write('pushq %s\n' % (rA))
+
+					elif (char == 'b'):
+						char = inputFile.read(1)
+						if char == '0':
+							rA = self.tools.registerByHex(inputFile.read(1))
+							char = inputFile.read(1)
+							if char == 'f':
+								outputFile.write('popq %s\n' % (rA))
+
+					char = inputFile.read(1)
 def main():
 	compiler = y86_64_compiler()
 	if len(sys.argv) != 3:

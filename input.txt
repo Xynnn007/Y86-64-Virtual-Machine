@@ -1,0 +1,4 @@
+irmovq $15, %rbx
+rrmovq %rbx, %rcx
+mrmovq %rcx, $-3(%rbx)
+addq %rbx, %rcx
