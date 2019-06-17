@@ -1,17 +1,23 @@
 # Y86-64 Virtual Machine
 
-Ô´ÓÚ¡¶ÉîÈëÀí½â¼ÆËã»úÏµÍ³¡·by Randal E. Bryant£¬ David R.O' Hallaron
-µÚËÄÕÂ´¦ÀíÆ÷ÌåÏµ½á¹¹Æªx86-64µÄ¼òÒ×°æy86-64
+æºäºã€Šæ·±å…¥ç†è§£è®¡ç®—æœºç³»ç»Ÿã€‹by Randal E. Bryantï¼Œ David R.O' Hallaron
+ç¬¬å››ç« å¤„ç†å™¨ä½“ç³»ç»“æ„ç¯‡x86-64çš„ç®€æ˜“ç‰ˆy86-64
 
-feature 1	»ã±àÂë->»úÆ÷Âë
+feature 1	æ±‡ç¼–ç ->æœºå™¨ç 
 
-Ê¾ÀıÎÄ¼ştestCode.txt
+ç¤ºä¾‹æ–‡ä»¶
+testCode.txt
+===============
 irmovq $15,%rbx
+
 rrmovq %rbx,%rcx
+
 rmmovq %rcx,-3(%rbx)
+
 addq %rbx,%rcx
 
-ÃüÁî python y86_64.py testCode.txt output.txt
+å‘½ä»¤ python y86_64.py testCode.txt output.txt
 
-Êä³ö½á¹û
+è¾“å‡ºç»“æœ
 30f30f0000000000000020314013fdffffffffffffff6031
+![ç¼–è¯‘å™¨å‘½ä»¤æç¤º](https://github.com/Xynnn007/Y86-64-Virtual-Machine/blob/master/introPictures/compiler.png)
