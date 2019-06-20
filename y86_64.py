@@ -190,8 +190,7 @@ class y86_64_vitualMachine():
 		print("%%r12	%s\n" %self.__readRegister('%r12'))
 		print("%%r13	%s\n" %self.__readRegister('%r13'))
 		print("%%r14	%s\n" %self.__readRegister('%r14'))
-		print("%%r15	%s\n" %self.__readRegister('%r15'))
-		print("%%pc 	%s\n" %self.__readRegister('%pc'))
+		print("%%pc 	%s\n" %self.__readRegister('pc'))
 		#跑一条命令
 	def __runCommand(self, command, type):
 			#停机
