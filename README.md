@@ -22,10 +22,10 @@
 ## feature 2 机器码->虚拟机执行<br>
 ### 使用示例 3<br>
 利用脚本testVM.py，其中的机器码由示例2编译生成<br>
-from y86_64 import y86_64_vitualMachine<br>
-a = y86_64_vitualMachine(2000)<br>
-b = '30f3fcffffffffffffff30f00a00000000000000613000'<br>
-a.runCommands(b)<br>
+`from y86_64 import y86_64_vitualMachine`<br>
+`a = y86_64_vitualMachine(2000)`<br>
+`b = '30f3fcffffffffffffff30f00a00000000000000613000'`<br>
+`a.runCommands(b)`<br>
 测试得到输出结果：<br>
 运行结束!<br>
 <br>
