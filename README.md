@@ -10,7 +10,7 @@
 `addq %rbx,%rcx`<br>
 命令 python y86_64.py testCode.txt output.txt<br>
 输出结果<br>
-30f30f0000000000000020314013fdffffffffffffff6031<br>
+`30f30f0000000000000020314013fdffffffffffffff6031`<br>
 ![编译器命令提示](https://github.com/Xynnn007/Y86-64-Virtual-Machine/blob/master/introPictures/compiler.png)<br>
 ### 使用示例 2<br>
 `irmovq $-4, %rbx`<br>
@@ -18,7 +18,7 @@
 `subq %rbx, %rax`<br>
 `halt`<br>
 输出结果<br>
-30f3fcffffffffffffff30f00a00000000000000613000<br>
+`30f3fcffffffffffffff30f00a00000000000000613000`<br>
 ## feature 2 机器码->虚拟机执行<br>
 ### 使用示例 3<br>
 利用脚本testVM.py，其中的机器码由示例2编译生成<br>
