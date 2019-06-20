@@ -1,4 +1,4 @@
-irmovq $15, %rbx
-rrmovq %rbx, %rcx
-mrmovq %rcx, $-3(%rbx)
-addq %rbx, %rcx
+irmovq $-4, %rbx
+irmovq $10, %rax
+subq %rbx, %rax
+halt

@@ -48,6 +48,11 @@ class tools():
 
 		self.code2CmovMap =  dict([val,key] for key,val in self.cmov2CodeMap.items())
 
+		self.hex2MathSymbol = {'0':'+',
+		'1':'-',
+		'2':'&',
+		'3':'^'}
+
 	def typeof(variate):
 		type=None
 		if isinstance(variate,int):
@@ -75,8 +80,8 @@ class tools():
 				res1.append(i)
 		return res1
 
-    #偏移量或立即数转化为小端8字节表示
-	def opInt2LittleEndine(self, inputInt):
+    #偏移量字符串或立即数转化为小端8字节表示
+	def opIntString2LittleEndine(self, inputInt):
 		inputInt = eval(inputInt.replace('$',''))
 		#删除数字中可能存在的$符号
 		#
@@ -94,8 +99,24 @@ class tools():
 		+ hexResult[:2]
 		return outResult
 
-	#小端8字节转化为十进制数
-	def opLittleEndine2Int(self, LittleEndineCode):
+	    #整数转化为小端8字节表示
+	def opInt2LittleEndine(self, inputInt):
+
+		inputInt = self.set2StandardInt(inputInt)
+		hexResult = '%.16x' % inputInt
+		#转化为十六进制表示
+		outResult = hexResult[14:] \
+		+ hexResult[12:14] \
+		+ hexResult[10:12] \
+		+ hexResult[8:10] \
+		+ hexResult[6:8] \
+		+ hexResult[4:6] \
+		+ hexResult[2:4] \
+		+ hexResult[:2]
+		return outResult
+
+	#小端8字节转化为十进制数string 带$
+	def opLittleEndine2IntString(self, LittleEndineCode):
 		#重新调序
 		hexOrigin = '0x' + LittleEndineCode[14:] \
 		+ LittleEndineCode[12:14] \
@@ -112,6 +133,24 @@ class tools():
 		OutputString = '$' + str(OutputInt)
 		return OutputString
 
+	#小端八字节表示为int
+	def opLittleEndine2Int(self, LittleEndineCode):
+		#重新调序
+		hexOrigin = '0x' + LittleEndineCode[14:] \
+		+ LittleEndineCode[12:14] \
+		+ LittleEndineCode[10:12] \
+		+ LittleEndineCode[8:10] \
+		+ LittleEndineCode[6:8] \
+		+ LittleEndineCode[4:6] \
+		+ LittleEndineCode[2:4] \
+		+ LittleEndineCode[:2]
+		OutputInt = eval(hexOrigin)
+		return self.set2StandardInt(OutputInt)
+
+		#将输入数字转化为合适的处于64位表示范围内的整数
+	def set2StandardInt(self, result):
+		return result % 0x10000000000000000
+
     #寄存器名称转化为不带0x十六进制数字编号
 	def hexByRegister(self, register):
 		return self.register2CodeMap[register]
@@ -127,6 +166,10 @@ class tools():
  	#字节码转化为整数操作指令
 	def opByHex(self, hex):
 		return self.code2OperationMap[hex]
+
+	#字节码转化为数学运算符号
+	def mathSymbolByHex(self, hex):
+		return self.hex2MathSymbol[hex]
 
     #分支指令转换为不带0x的十六进制数字编号
 	def hexByJmp(self, jmp):

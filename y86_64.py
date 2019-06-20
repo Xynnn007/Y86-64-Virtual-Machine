@@ -8,64 +8,411 @@ import tools,sys
 class y86_64_vitualMachine():
 	def __init__(self, sizeOfMemory):
 		#初始化内存
-		self.__setMemory()
+		self.__setMemory(sizeOfMemory)
 		#初始化寄存器
 		self.__setRegister()
 		#初始化标志位
 		self.__setCC()
 		#初始化程序计数器
-		self.PC = 0
 
+		#初始化停机状态
+		self.haltState = 0
+
+		self.tools = tools.tools()
 
 		#设置内存
-	def __setMemory(self):
-		self.memory = ['00' for i in range(sizeOfMemory)]
+	def __setMemory(self, sizeOfMemory):
+		self.__memory = ['00' for i in range(sizeOfMemory)]
 
 		#设置寄存器
-	def __setRegister():
-		self.register = {'rax':'00',
-		'rcx':'00',
-		'rdx':'00',
-		'rbx':'00',
-		'rsp':'00',
-		'rbp':'00',
-		'rsi':'00',
-		'rdi':'00',
-		'r8':'00',
-		'r9':'00',
-		'r10':'00',
-		'r11':'00',
-		'r12':'00',
-		'r13':'00',
-		'r14':'00'}
+	def __setRegister(self):
+		self.__register = {'%rax':'0000000000000000',
+		'%rcx':'0000000000000000',
+		'%rdx':'0000000000000000',
+		'%rbx':'0000000000000000',
+		'%rsp':'0000000000000000',
+		'%rbp':'0000000000000000',
+		'%rsi':'0000000000000000',
+		'%rdi':'0000000000000000',
+		'%r8':'0000000000000000',
+		'%r9':'0000000000000000',
+		'%r10':'0000000000000000',
+		'%r11':'0000000000000000',
+		'%r12':'0000000000000000',
+		'%r13':'0000000000000000',
+		'%r14':'0000000000000000',
+		'pc':'0000000000000000'}
 
 	def __setCC(self):
-		self.CC = {'ZF':0,
+		self.__CC = {'ZF':0,
 		'SF':0,
 		'OF':0}
 
-		#读内存
-	def __readMemory(self,addr,size):
-		return self.memory[addr:addr+size]
+		#写状态寄存器
+	def __writeCC(self,CC,value):
+		if CC in self.__CC:
+			self.__CC[CC] = value
 
-		#写内存
-	def __writeMemory(self,addr,data):
-		if (len(data) != 4 & data[:2]!='0x'):
-			return False
-		self.memory[addr] = data
+		#读状态寄存器
+	def __readCC(self,CC):
+		if CC in self.__CC:
+			return self.__CC[CC]
+
+		#设置程序计数器PC
+	def __setPC(self, value):
+		hexValue = self.tools.opInt2LittleEndine(value)
+
+		self.__writeRegister('pc',hexValue)
+
+		#获得程序计数器PC
+	def __getPC(self):
+		intValue = self.tools.opLittleEndine2Int(self.__readRegister('pc'))
+		return intValue
+
+		#读内存一个字节
+	def __readMemoryByte(self,addr):
+		return self.__memory[addr]
+
+		#读内存8个字节
+	def __readMemory8Byte(self,addr):
+		readMemory = "" + self.__readMemoryByte(addr+7)\
+		+ self.__readMemoryByte(addr+6) \
+		+ self.__readMemoryByte(addr+5) \
+		+ self.__readMemoryByte(addr+4) \
+		+ self.__readMemoryByte(addr+3) \
+		+ self.__readMemoryByte(addr+2) \
+		+ self.__readMemoryByte(addr+1) \
+		+ self.__readMemoryByte(addr) \
+
+		return readMemory
+
+		#写内存一个字节
+	def __writeMemoryByte(self,addr,data):
+		self.__memory[addr] = data
 		return True
 
+		#写内存8个字节，小端模式
+	def __writeMemory8Byte(self,addr,data):
+		self.__writeMemoryByte(addr, data[14:16])
+		self.__writeMemoryByte(addr + 1, data[12:14])
+		self.__writeMemoryByte(addr + 2, data[10:12])
+		self.__writeMemoryByte(addr + 3, data[8:10])
+		self.__writeMemoryByte(addr + 4, data[6:8])
+		self.__writeMemoryByte(addr + 5, data[4:6])
+		self.__writeMemoryByte(addr + 6, data[2:4])
+		self.__writeMemoryByte(addr + 7, data[0:2])
+
+
 		#写寄存器
-	def __writeRegister(register , value):
-		if register in self.register:
-			self.register[register] = value
+	def __writeRegister(self, register , value):
+		if register in self.__register:
+			self.__register[register] = value
 
 		#读寄存器
-	def __readRegister(register):
-		if register in self.register:
-			return self.register[register]
+	def __readRegister(self, register):
+		if register in self.__register:
+			return self.__register[register]
 
+		#入栈8字节
+	def __push(self, data):
+		presentPoint = self.tools.opLittleEndine2Int(self.__readRegister('rsp'))
+		presentPoint -= 8
+		self.__writeMemory8Byte(presentPoint, data)
+		self.__writeRegister('rsp', self.tools.opInt2LittleEndine(presentPoint))
 
+		#出栈8字节到寄存器
+	def __pop(self, register):
+		presentPoint = self.tools.opLittleEndine2Int(self.__readRegister('rsp'))
+		data = self.__readMemory8Byte(presentPoint)
+		presentPoint += 8
+		self.__writeRegister('rsp', self.tools.opInt2LittleEndine(presentPoint))
+		self.__writeRegister(register, data)
+
+		#连续跑命令
+	def runCommands(self, commandSeries):
+		commandsLength = len(commandSeries)
+		while(not self.haltState):
+			i = self.__getPC() * 2
+			code = commandSeries[i]
+			if(code == '0'):
+				self.__runCommand(commandSeries[i:i+2], 0)
+
+			elif(code == '1'):
+				self.__runCommand(commandSeries[i:i+2], 1)
+
+			elif(code == '2'):
+				self.__runCommand(commandSeries[i:i+4], 2)
+
+			elif(code == '3'):
+				self.__runCommand(commandSeries[i:i+20], 3)
+
+			elif(code == '4'):
+				self.__runCommand(commandSeries[i:i+20], 4)
+
+			elif(code == '5'):
+				self.__runCommand(commandSeries[i:i+20], 5)
+	
+			elif(code == '6'):
+				self.__runCommand(commandSeries[i:i+4], 6)
+			
+			elif(code == '7'):
+				self.__runCommand(commandSeries[i:i+18], 7)
+			
+			elif(code == '8'):
+				self.__runCommand(commandSeries[i:i+18], 8)
+		
+			elif(code == '9'):
+				self.__runCommand(commandSeries[i:i+2], 9)
+			
+			elif(code == 'a'):
+				self.__runCommand(commandSeries[i:i+4], 0xa)
+			
+			elif(code == 'b'):
+				self.__runCommand(commandSeries[i:i+4], 0xb)
+				
+			i = self.__getPC() * 2
+
+		#跑一条命令
+		print("运行结束!\n")
+		print("寄存器状态：\n")
+		print("%%rax	%s\n" %self.__readRegister('%rax'))
+		print("%%rbx	%s\n" %self.__readRegister('%rbx'))
+		print("%%rcx	%s\n" %self.__readRegister('%rcx'))
+		print("%%rdx	%s\n" %self.__readRegister('%rdx'))
+		print("%%rsi	%s\n" %self.__readRegister('%rsi'))
+		print("%%rdi	%s\n" %self.__readRegister('%rdi'))
+		print("%%rsp	%s\n" %self.__readRegister('%rsp'))
+		print("%%rbp	%s\n" %self.__readRegister('%rbp'))
+		print("%%r8 	%s\n" %self.__readRegister('%r8'))
+		print("%%r9 	%s\n" %self.__readRegister('%r9'))
+		print("%%r10 	%s\n" %self.__readRegister('%r10'))
+		print("%%r11 	%s\n" %self.__readRegister('%r11'))
+		print("%%r12	%s\n" %self.__readRegister('%r12'))
+		print("%%r13	%s\n" %self.__readRegister('%r13'))
+		print("%%r14	%s\n" %self.__readRegister('%r14'))
+		print("%%r15	%s\n" %self.__readRegister('%r15'))
+		print("%%pc 	%s\n" %self.__readRegister('%pc'))
+		#跑一条命令
+	def __runCommand(self, command, type):
+			#停机
+			i = 0
+			if (type == 0):
+				i += 1
+				if command[i] == '0':
+					self.haltState = 1
+					#HALT
+				self.__setPC(self.__getPC() + 1)
+
+			#nop
+			elif (type == 1):
+				i += 1
+				if command[i] == '0':
+					pass
+					#nop
+				self.__setPC(self.__getPC() + 1)	
+
+			#rrmovq/cmovXX
+			elif (type == 2):
+				i += 1
+				op = command[i]
+				i += 1
+				rA = self.tools.registerByHex(command[i])
+				i += 1
+				rB = self.tools.registerByHex(command[i])
+				if op == '0':
+					self.__writeRegister(rB , self.__readRegister(rA))
+
+					#cmovle
+				elif(op == '1' and (not(self.__readCC('SF') ^ self.__readCC('OF'))or self.__readCC('ZF')) ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+					
+					#cmovl
+				elif(op == '2' and (self.__readCC('SF') ^ self.__readCC('OF')) ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+					
+					#cmove
+				elif(op == '3' and self.__readCC('ZF') ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+					
+					#cmovne
+				elif(op == '4' and (not self.__readCC('ZF')) ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+
+					#cmovge
+				elif(op == '5' and (not (self.__readCC('SF') ^ self.__readCC('OF'))) ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+
+					#cmovg
+				elif(op == '6' and (not (self.__readCC('SF') ^ self.__readCC('OF'))and not self.__readCC('ZF')) ):
+					self.__writeRegister(rB , self.__readRegister(rA))
+				self.__setPC(self.__getPC() + 2)
+
+			#irmovq
+			elif (type == 3):
+				i += 2
+
+				if command[i-1:i+1] == '0f':
+					i += 1
+					rB = self.tools.registerByHex(command[i])
+					i += 16
+					V = command[i-15:i+1]
+					self.__writeRegister(rB , V)
+					self.__setPC(self.__getPC() + 10)
+					#irmovq
+
+			#rmmovq
+			elif (type == 4):
+				i += 1
+				if command[i] == '0':
+					i += 1
+					rA = self.tools.registerByHex(command[i])
+					i += 1
+					rB = self.tools.registerByHex(command[i])
+					i += 16
+					D = self.tools.opLittleEndine2Int(command[i-15:i+1])
+					self.__writeMemory8Byte(self.__readRegister(rB) + D, self.__readRegister(rA))
+					self.__setPC(self.__getPC() + 10)
+					#rmmovq
+
+			#mrmovq
+			elif (type == 5):
+				i += 1
+				if command[i] == '0':
+					i += 1
+					rA = self.tools.registerByHex(command[i])
+					i += 1
+					rB = self.tools.registerByHex(command[i])
+					i += 16
+					D = self.tools.opLittleEndine2Int(command[i-15:i+1])
+					self.__writeRegister(rA, self.__readMemory8Byte(self.tools.opLittleEndine2Int(self.__readRegister(rB)) + D, 16))
+					self.__setPC(self.__getPC() + 10)
+					#mrmovq
+
+				# OP 操作符
+			
+			#OP
+			elif (type == 6):
+				i += 1
+				op = self.tools.mathSymbolByHex(command[i])
+				i += 1
+				rA = self.tools.registerByHex(command[i])
+				i += 1
+				rB = self.tools.registerByHex(command[i])
+
+				#加减算法
+				if (op in ['+','-']):
+					equation =  str(self.tools.opLittleEndine2Int(self.__readRegister(rB))) + op + str(self.tools.opLittleEndine2Int(self.__readRegister(rA)))
+					result = eval(equation)
+					#设置标志位
+					if (result < -0x100000000000000 or result > 0x7fffffffffffffff):
+						self.__writeCC('OF',1)
+					else:
+						self.__writeCC('OF',0)
+					if (result == 0):
+						self.__writeCC('ZF',1)
+					else:
+						self.__writeCC('ZF',0)
+					result = self.tools.set2StandardInt(result)
+					if (result & 0x8000000000000000 != 0 ):
+						self.__writeCC('SF',1)
+					else :
+						self.__writeCC('SF',0)
+					result = self.tools.opInt2LittleEndine(result)
+				#位级算法
+				elif (op in ['&','^']):
+					equcation = "0x" + self.__readRegister(rB) + op + "0x" + self.__readRegister(rA)
+					result = eval(equcation)
+
+					#设置标志位
+					self.__writeCC('OF',0)
+					if (result == 0):
+						self.__writeCC('ZF',1)
+					else:
+						self.__writeCC('ZF',0)
+
+					result = "%.16x" % result
+					if (result[0] == '0'):
+						self.__writeCC('SF',0)
+					else:
+						self.__writeCC('SF',1)
+				
+				#写入寄存器rB
+				self.__writeRegister(rB, result)
+				self.__setPC(self.__getPC() + 2)
+				#OPq rA,rB
+				
+				#跳转操作符
+			
+			#jXX
+			elif (type == 7):
+				i += 1
+				JXXCode = command[i]
+				i += 16
+				Dest = self.tools.opLittleEndine2Int(command[i-15:i+1])
+				if (JxxCode =='0'):
+					self.__setPC(Dest)
+					
+					#jle
+				elif(JxxCode == '1' and (not (self.__readCC('SF') ^ self.__readCC('OF'))or self.__readCC('ZF')) ):
+					self.__setPC(Dest)
+					
+					#jl
+				elif(JxxCode == '2' and (self.__readCC('SF') ^ self.__readCC('OF')) ):
+					self.__setPC(Dest)
+					
+					#je
+				elif(JxxCode == '3' and self.__readCC('ZF') ):
+					self.__setPC(Dest)
+					
+					#jne
+				elif(JxxCode == '4' and (not self.__readCC('ZF')) ):
+					self.__setPC(Dest)
+
+					#jge
+				elif(JxxCode == '5' and (not (self.__readCC('SF') ^ self.__readCC('OF'))) ):
+					self.__setPC(Dest)
+
+					#jg
+				elif(JxxCode == '6' and (not (self.__readCC('SF') ^ self.__readCC('OF'))and not self.__readCC('ZF')) ):
+					self.__setPC(Dest)
+				self.__setPC(self.__getPC() + 9)
+				
+			#call Dest
+			elif (type == 8):
+				i += 1
+				if command[i] == '0':
+					i += 16
+					Dest = self.tools.opLittleEndine2Int(command[i-15:i+1])
+					self.__setPC(Dest)
+					self.__push(self.tools.opInt2LittleEndine(self.__getPC + 9))
+
+			#ret
+			elif (type == 9):
+				i += 1
+				if command[i] == '0':
+					self.__pop('pc')
+
+			#pushq
+			elif (type == 0xa):
+				i += 1
+				if command[i] == '0':
+					i += 1
+					rA = self.tools.registerByHex(command[i])
+					i += 1
+					if command[i] == 'f':
+						self.__push(self.__readRegister[rA])
+						self.__setPC(self.__getPC + 2)
+
+			#popq
+			elif (type == 0xb):
+				i += 1
+				if command[i] == '0':
+					i += 1
+					rA = self.tools.registerByHex(command[i])
+					i += 1
+					if command[i] == 'f':
+						self.__pop(rA)
+						self.__setPC(self.__getPC + 2)
 	#def __runCommand(command):
 
 	#def __compile()
@@ -127,7 +474,7 @@ class y86_64_compiler():
 			binCode += self.tools.hexByRegister(icode[2])
 
 			#立即数V
-			binCode += self.tools.opInt2LittleEndine(icode[1])
+			binCode += self.tools.opIntString2LittleEndine(icode[1])
 			return binCode
 
 		#rmmovq rA,D(rB)  -> 4|0|rA|rB|D
@@ -141,7 +488,7 @@ class y86_64_compiler():
 			binCode += self.tools.hexByRegister(icode[3])
 
 			#内存偏移D
-			binCode += self.tools.opInt2LittleEndine(icode[2])
+			binCode += self.tools.opIntString2LittleEndine(icode[2])
 			return binCode
 
 		#mrmovq rA,D(rB)  -> 5|0|rA|rB|D
@@ -155,7 +502,7 @@ class y86_64_compiler():
 			binCode += self.tools.hexByRegister(icode[2])
 
 			#内存偏移D
-			binCode += self.tools.opInt2LittleEndine(icode[1])
+			binCode += self.tools.opIntString2LittleEndine(icode[1])
 			return binCode
 
 		#OPq rA,rB  -> 6|fn|rA|rB
@@ -180,7 +527,7 @@ class y86_64_compiler():
 			binCode += self.tools.hexByJmp(icode[0])
 
 			#目的地址Dest
-			binCode += self.tools.opInt2LittleEndine(icode[1])
+			binCode += self.tools.opIntString2LittleEndine(icode[1])
 
 			return binCode
 
@@ -204,7 +551,7 @@ class y86_64_compiler():
 			binCode = '80'
 
 			#目的地址Dest
-			binCode += self.tools.opInt2LittleEndine(icode[1])
+			binCode += self.tools.opIntString2LittleEndine(icode[1])
 
 			return binCode
 		
@@ -273,7 +620,7 @@ class y86_64_disassembler():
 						char = inputFile.read(2)
 						if char == '0f':
 							rB = self.tools.registerByHex(inputFile.read(1))
-							V = self.tools.opLittleEndine2Int(inputFile.read(16))
+							V = self.tools.opLittleEndine2IntString(inputFile.read(16))
 							outputFile.write('irmovq %s, %s\n' % (V,rB))
 
 					elif (char == '4'):
@@ -281,7 +628,7 @@ class y86_64_disassembler():
 						if char == '0':
 							rA = self.tools.registerByHex(inputFile.read(1))
 							rB = self.tools.registerByHex(inputFile.read(1))
-							D = self.tools.opLittleEndine2Int(inputFile.read(16))
+							D = self.tools.opLittleEndine2IntString(inputFile.read(16))
 							outputFile.write('rmmovq %s, %s(%s)\n' % (rA,D,rB))
 
 					elif (char == '5'):
@@ -289,7 +636,7 @@ class y86_64_disassembler():
 						if char == '0':
 							rA = self.tools.registerByHex(inputFile.read(1))
 							rB = self.tools.registerByHex(inputFile.read(1))
-							D = self.tools.opLittleEndine2Int(inputFile.read(16))
+							D = self.tools.opLittleEndine2IntString(inputFile.read(16))
 							outputFile.write('mrmovq %s(%s), %s\n' % (D,rB,rA))
 
 					elif (char == '6'):
@@ -300,13 +647,13 @@ class y86_64_disassembler():
 
 					elif (char == '7'):
 						jXX = self.tools.jmpByHex(inputFile.read(1))
-						Dest = self.tools.opLittleEndine2Int(inputFile.read(16))
+						Dest = self.tools.opLittleEndine2IntString(inputFile.read(16))
 						outputFile.write('%s %s\n' % (jXX,Dest))
 
 					elif (char == '8'):
 						char = inputFile.read(1)
 						if char == '0':
-							Dest = self.tools.opLittleEndine2Int(inputFile.read(16))
+							Dest = self.tools.opLittleEndine2IntString(inputFile.read(16))
 							outputFile.write('call %s\n' % (Dest))
 
 					elif (char == '9'):
@@ -331,6 +678,7 @@ class y86_64_disassembler():
 								outputFile.write('popq %s\n' % (rA))
 
 					char = inputFile.read(1)
+
 def main():
 	compiler = y86_64_compiler()
 	if len(sys.argv) != 3:
