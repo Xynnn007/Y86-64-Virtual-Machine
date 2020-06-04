@@ -1,0 +1,23 @@
+irmovq $10, %rdi
+call 20
+halt
+irmovq $0, %rcx
+addq %rcx, %rdi
+je 103
+irmovq $1, %rbx
+subq %rbx, %rdi
+je 114
+pushq %rdi
+call 20
+popq %rdi
+irmovq $1, %rcx
+pushq %rax
+subq %rcx, %rdi
+call 20
+popq %rdx
+addq %rdx, %rax
+ret
+irmovq $0, %rax
+ret
+irmovq $1, %rax
+ret

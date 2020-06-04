@@ -436,6 +436,8 @@ class y86_64_compiler():
 				while(sentence):
 					outputFile.write(self.__compileSentence(sentence))
 					sentence = inputFile.readline()
+			
+
 
 	#逐句编译
 	def __compileSentence(self, sentence):
@@ -561,7 +563,7 @@ class y86_64_compiler():
 			return binCode
 
 		#pushq rA  -> a|0|rA|f
-		elif (icode[0] == 'call'):
+		elif (icode[0] == 'pushq'):
 			binCode = 'a0'
 
 			#寄存器rA
@@ -572,7 +574,7 @@ class y86_64_compiler():
 			return binCode
 
 		#popq rA  -> b|0|rA|f
-		elif (icode[0] == 'call'):
+		elif (icode[0] == 'popq'):
 			binCode = 'b0'
 
 			#寄存器rA

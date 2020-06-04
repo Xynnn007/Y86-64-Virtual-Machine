@@ -1,4 +1,26 @@
-irmovq $-4, %rbx
-irmovq $10, %rax
-subq %rbx, %rax
+irmovq $5, %rdi
+call 20
 halt
+rrmovq %rdi, %rbx
+addq %rbx,%rbx
+je 101
+irmovq $1, %rcx
+rrmovq %rdi,%rbx
+subq %rcx, %rbx
+je 112
+subq %rcx, %rdi
+pushq %rdi
+call 20
+rrmovq %rax, %rsi
+popq %rdi
+pushq %rax
+irmovq $1, %rcx
+subq %rcx, %rdi
+call 20
+popq %rbx
+addq %rbx, %rax
+ret
+irmovq $0, %rax
+ret
+irmovq $1, %rax
+ret

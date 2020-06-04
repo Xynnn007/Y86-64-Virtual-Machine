@@ -89,6 +89,7 @@ class tools():
 			inputInt = inputInt + 0x10000000000000000
 		hexResult = '%.16x' % inputInt
 		#转化为十六进制表示
+		'''
 		outResult = hexResult[14:] \
 		+ hexResult[12:14] \
 		+ hexResult[10:12] \
@@ -97,6 +98,8 @@ class tools():
 		+ hexResult[4:6] \
 		+ hexResult[2:4] \
 		+ hexResult[:2]
+		'''
+		outResult = hexResult[::-1]
 		return outResult
 
 	    #整数转化为小端8字节表示
